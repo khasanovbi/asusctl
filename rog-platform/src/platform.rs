@@ -1,12 +1,17 @@
 use std::fmt::Display;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use log::{info, warn};
 use serde::{Deserialize, Serialize};
 use zbus::zvariant::{OwnedValue, Type, Value};
 
 use crate::error::{PlatformError, Result};
-use crate::{attr_string, attr_string_array, to_device};
+use crate::{
+    has_attr, read_attr_string, read_attr_string_array, to_device, watch_attr, write_attr_string,
+};
+
+/// Per-handler platform profile class devices (kernel 6.14+).
+const PLATFORM_PROFILE_CLASS: &str = "/sys/class/platform-profile";
 
 /// The "platform" device provides access to things like:
 /// - `dgpu_disable`
@@ -23,17 +28,100 @@ pub struct RogPlatform {
 }
 
 impl RogPlatform {
-    attr_string!(
+    has_attr!(
         /// The acpi platform_profile support
-        "platform_profile",
-        pp_path
+        "platform_profile" pp_path
+    );
+    watch_attr!(
+        /// The acpi platform_profile support
+        "platform_profile" pp_path
+    );
+    has_attr!(
+        /// The acpi platform_profile support
+        "platform_profile_choices" pp_path
+    );
+    watch_attr!(
+        /// The acpi platform_profile support
+        "platform_profile_choices" pp_path
     );
 
-    attr_string_array!(
-        /// The acpi platform_profile support
-        "platform_profile_choices",
-        pp_path
-    );
+    /// The acpi platform_profile. Reports `quiet` when the low-power profile
+    /// is split across handlers (see [`Self::split_low_power_handlers`]).
+    pub fn get_platform_profile(&self) -> Result<String> {
+        let profile = read_attr_string(&to_device(&self.pp_path)?, "platform_profile")?;
+        if profile.trim() == "custom" && self.split_low_power_active() {
+            return Ok(PlatformProfile::Quiet.to_string());
+        }
+        Ok(profile)
+    }
+
+    /// Set the acpi platform_profile. `quiet`/`low-power` are written to each
+    /// handler directly when the legacy interface can't express them.
+    pub fn set_platform_profile(&self, value: &str) -> Result<()> {
+        let profile = PlatformProfile::from(value);
+        if matches!(profile, PlatformProfile::Quiet | PlatformProfile::LowPower)
+            && let Some(handlers) = self.split_low_power_handlers()
+        {
+            for (dir, name) in handlers {
+                let path = dir.join("profile");
+                std::fs::write(&path, name)
+                    .map_err(|e| PlatformError::IoPath(path.display().to_string(), e))?;
+            }
+            return Ok(());
+        }
+        write_attr_string(&mut to_device(&self.pp_path)?, "platform_profile", value)
+    }
+
+    /// The acpi platform_profile_choices, plus `Quiet` when the low-power
+    /// profile is only reachable per handler.
+    pub fn get_platform_profile_choices(&self) -> Result<Vec<PlatformProfile>> {
+        let mut choices =
+            read_attr_string_array(&to_device(&self.pp_path)?, "platform_profile_choices")?;
+        if !choices.contains(&PlatformProfile::Quiet)
+            && !choices.contains(&PlatformProfile::LowPower)
+            && self.split_low_power_handlers().is_some()
+        {
+            choices.push(PlatformProfile::Quiet);
+        }
+        Ok(choices)
+    }
+
+    /// With several platform_profile handlers the legacy interface only lists
+    /// the choices common to all of them. On Intel Panther Lake the SoC Power
+    /// Slider offers `low-power` while asus-wmi offers `quiet`, so neither is
+    /// listed although both mean the same thing. Returns, for every handler,
+    /// the name of its low-power profile, or `None` if the legacy interface
+    /// already works or some handler has no low-power profile.
+    fn split_low_power_handlers(&self) -> Option<Vec<(PathBuf, &'static str)>> {
+        let entries = std::fs::read_dir(PLATFORM_PROFILE_CLASS).ok()?;
+        let mut handlers = Vec::new();
+        for entry in entries.flatten() {
+            let dir = entry.path();
+            let choices = read_trimmed(&dir.join("choices"))?;
+            let choices: Vec<&str> = choices.split_whitespace().collect();
+            let name = if choices.contains(&"quiet") {
+                "quiet"
+            } else if choices.contains(&"low-power") {
+                "low-power"
+            } else {
+                return None;
+            };
+            handlers.push((dir, name));
+        }
+        let split = handlers.len() > 1
+            && handlers.iter().any(|(_, n)| *n == "quiet")
+            && handlers.iter().any(|(_, n)| *n == "low-power");
+        split.then_some(handlers)
+    }
+
+    /// Whether every handler is currently in its low-power profile.
+    fn split_low_power_active(&self) -> bool {
+        self.split_low_power_handlers().is_some_and(|handlers| {
+            handlers
+                .iter()
+                .all(|(dir, name)| read_trimmed(&dir.join("profile")).is_some_and(|p| p == *name))
+        })
+    }
 
     pub fn new() -> Result<Self> {
         let mut enumerator = udev::Enumerator::new().map_err(|err| {
@@ -65,6 +153,12 @@ impl RogPlatform {
             "asus-nb-wmi not found".into(),
         ))
     }
+}
+
+fn read_trimmed(path: &Path) -> Option<String> {
+    std::fs::read_to_string(path)
+        .ok()
+        .map(|s| s.trim().to_owned())
 }
 
 impl Default for RogPlatform {
