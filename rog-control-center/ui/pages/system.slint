@@ -857,6 +857,16 @@ export component PageSystem inherits Rectangle {
                         }
 
                         SystemDropdown {
+                            text: @tr("EPP for ") + @tr("Quiet") + @tr(" Policy");
+                            current_index <=> SystemPageData.profile_quiet_epp;
+                            current_value: SystemPageData.energy_performance_choices[SystemPageData.profile_quiet_epp];
+                            model <=> SystemPageData.energy_performance_choices;
+                            selected => {
+                                SystemPageData.cb_profile_quiet_epp(SystemPageData.profile_quiet_epp)
+                            }
+                        }
+
+                        SystemDropdown {
                             text: @tr("EPP for Balanced Policy");
                             current_index <=> SystemPageData.profile_balanced_epp;
                             current_value: SystemPageData.energy_performance_choices[SystemPageData.profile_balanced_epp];
@@ -873,16 +883,6 @@ export component PageSystem inherits Rectangle {
                             model <=> SystemPageData.energy_performance_choices;
                             selected => {
                                 SystemPageData.cb_profile_performance_epp(SystemPageData.profile_performance_epp)
-                            }
-                        }
-
-                        SystemDropdown {
-                            text: @tr("EPP for ") + @tr("Quiet") + @tr(" Policy");
-                            current_index <=> SystemPageData.profile_quiet_epp;
-                            current_value: SystemPageData.energy_performance_choices[SystemPageData.profile_quiet_epp];
-                            model <=> SystemPageData.energy_performance_choices;
-                            selected => {
-                                SystemPageData.cb_profile_quiet_epp(SystemPageData.profile_quiet_epp)
                             }
                         }
                     }
