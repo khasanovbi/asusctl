@@ -22,6 +22,14 @@ export global SystemPageData {
     // The dropdown list index is used to index in to this and find the correct
     // value for platform profile
     in-out property <[int]> platform_profile_indexes: [0, 1, 2, 3];
+    // Dropdown position of a platform profile enum value, or -1
+    pure public function platform_profile_position(value: int) -> int {
+        if (platform_profile_indexes.length > 0 && platform_profile_indexes[0] == value) { return 0; }
+        if (platform_profile_indexes.length > 1 && platform_profile_indexes[1] == value) { return 1; }
+        if (platform_profile_indexes.length > 2 && platform_profile_indexes[2] == value) { return 2; }
+        if (platform_profile_indexes.length > 3 && platform_profile_indexes[3] == value) { return 3; }
+        return -1;
+    }
     callback cb_platform_profile(int);
     in-out property <[string]> energy_performance_choices: [
         @tr("Default"),
@@ -869,7 +877,7 @@ export component PageSystem inherits Rectangle {
                         }
 
                         SystemDropdown {
-                            text: @tr("EPP for ") + SystemPageData.platform_profile_choices[2] + @tr(" Policy");
+                            text: @tr("EPP for ") + @tr("Quiet") + @tr(" Policy");
                             current_index <=> SystemPageData.profile_quiet_epp;
                             current_value: SystemPageData.energy_performance_choices[SystemPageData.profile_quiet_epp];
                             model <=> SystemPageData.energy_performance_choices;
@@ -895,11 +903,11 @@ export component PageSystem inherits Rectangle {
                             spacing: 10px;
                             SystemDropdown {
                                 text: @tr("Throttle Policy on Battery");
-                                current_index <=> SystemPageData.platform_profile_on_battery;
-                                current_value: SystemPageData.platform_profile_choices[SystemPageData.platform_profile_on_battery];
+                                current_index: SystemPageData.platform_profile_position(SystemPageData.platform_profile_on_battery);
+                                current_value: SystemPageData.platform_profile_choices[self.current_index];
                                 model <=> SystemPageData.platform_profile_choices;
                                 selected => {
-                                    SystemPageData.cb_platform_profile_on_battery(SystemPageData.platform_profile_on_battery)
+                                    SystemPageData.cb_platform_profile_on_battery(SystemPageData.platform_profile_indexes[self.current_index])
                                 }
                             }
 
@@ -916,11 +924,11 @@ export component PageSystem inherits Rectangle {
                             spacing: 10px;
                             SystemDropdown {
                                 text: @tr("Throttle Policy on AC");
-                                current_index <=> SystemPageData.platform_profile_on_ac;
-                                current_value: SystemPageData.platform_profile_choices[SystemPageData.platform_profile_on_ac];
+                                current_index: SystemPageData.platform_profile_position(SystemPageData.platform_profile_on_ac);
+                                current_value: SystemPageData.platform_profile_choices[self.current_index];
                                 model <=> SystemPageData.platform_profile_choices;
                                 selected => {
-                                    SystemPageData.cb_platform_profile_on_ac(SystemPageData.platform_profile_on_ac)
+                                    SystemPageData.cb_platform_profile_on_ac(SystemPageData.platform_profile_indexes[self.current_index])
                                 }
                             }
 
