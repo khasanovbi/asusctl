@@ -77,6 +77,64 @@ component FanTab inherits Rectangle {
 export component PageFans inherits VerticalLayout {
     TabWidget {
         Tab {
+            title: @tr("Quiet");
+            TabWidget {
+                Tab {
+                    title: @tr("CPU");
+                    FanTab {
+                        tab_enabled <=> FanPageData.cpu_fan_available;
+                        enabled <=> FanPageData.quiet_cpu_enabled;
+                        nodes <=> FanPageData.quiet_cpu;
+                        apply => {
+                            FanPageData.set_fan_data(FanType.CPU, Profile.Quiet, self.enabled, FanPageData.quiet_cpu);
+                        }
+                        toggled => {
+                            FanPageData.set_fan_data(FanType.CPU, Profile.Quiet, self.enabled, FanPageData.quiet_cpu);
+                        }
+                        default => {
+                            FanPageData.set_profile_default(Profile.Quiet);
+                        }
+                    }
+                }
+
+                Tab {
+                    title: @tr("Mid");
+                    FanTab {
+                        tab_enabled <=> FanPageData.mid_fan_available;
+                        enabled <=> FanPageData.quiet_mid_enabled;
+                        nodes <=> FanPageData.quiet_mid;
+                        apply => {
+                            FanPageData.set_fan_data(FanType.Middle, Profile.Quiet, self.enabled, FanPageData.quiet_mid);
+                        }
+                        toggled => {
+                            FanPageData.set_fan_data(FanType.Middle, Profile.Quiet, self.enabled, FanPageData.quiet_mid);
+                        }
+                        default => {
+                            FanPageData.set_profile_default(Profile.Quiet);
+                        }
+                    }
+                }
+
+                Tab {
+                    title: @tr("GPU");
+                    FanTab {
+                        tab_enabled <=> FanPageData.gpu_fan_available;
+                        enabled <=> FanPageData.quiet_gpu_enabled;
+                        nodes <=> FanPageData.quiet_gpu;
+                        apply => {
+                            FanPageData.set_fan_data(FanType.GPU, Profile.Quiet, self.enabled, FanPageData.quiet_gpu);
+                        }
+                        toggled => {
+                            FanPageData.set_fan_data(FanType.GPU, Profile.Quiet, self.enabled, FanPageData.quiet_gpu);
+                        }
+                        default => {
+                            FanPageData.set_profile_default(Profile.Quiet);
+                        }
+                    }
+                }
+            }
+        }
+        Tab {
             title: @tr("Balanced");
             TabWidget {
                 Tab {
@@ -194,63 +252,5 @@ export component PageFans inherits VerticalLayout {
             }
         }
 
-        Tab {
-            title: @tr("Quiet");
-            TabWidget {
-                Tab {
-                    title: @tr("CPU");
-                    FanTab {
-                        tab_enabled <=> FanPageData.cpu_fan_available;
-                        enabled <=> FanPageData.quiet_cpu_enabled;
-                        nodes <=> FanPageData.quiet_cpu;
-                        apply => {
-                            FanPageData.set_fan_data(FanType.CPU, Profile.Quiet, self.enabled, FanPageData.quiet_cpu);
-                        }
-                        toggled => {
-                            FanPageData.set_fan_data(FanType.CPU, Profile.Quiet, self.enabled, FanPageData.quiet_cpu);
-                        }
-                        default => {
-                            FanPageData.set_profile_default(Profile.Quiet);
-                        }
-                    }
-                }
-
-                Tab {
-                    title: @tr("Mid");
-                    FanTab {
-                        tab_enabled <=> FanPageData.mid_fan_available;
-                        enabled <=> FanPageData.quiet_mid_enabled;
-                        nodes <=> FanPageData.quiet_mid;
-                        apply => {
-                            FanPageData.set_fan_data(FanType.Middle, Profile.Quiet, self.enabled, FanPageData.quiet_mid);
-                        }
-                        toggled => {
-                            FanPageData.set_fan_data(FanType.Middle, Profile.Quiet, self.enabled, FanPageData.quiet_mid);
-                        }
-                        default => {
-                            FanPageData.set_profile_default(Profile.Quiet);
-                        }
-                    }
-                }
-
-                Tab {
-                    title: @tr("GPU");
-                    FanTab {
-                        tab_enabled <=> FanPageData.gpu_fan_available;
-                        enabled <=> FanPageData.quiet_gpu_enabled;
-                        nodes <=> FanPageData.quiet_gpu;
-                        apply => {
-                            FanPageData.set_fan_data(FanType.GPU, Profile.Quiet, self.enabled, FanPageData.quiet_gpu);
-                        }
-                        toggled => {
-                            FanPageData.set_fan_data(FanType.GPU, Profile.Quiet, self.enabled, FanPageData.quiet_gpu);
-                        }
-                        default => {
-                            FanPageData.set_profile_default(Profile.Quiet);
-                        }
-                    }
-                }
-            }
-        }
     }
 }
