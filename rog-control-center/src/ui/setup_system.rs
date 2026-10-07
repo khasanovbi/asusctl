@@ -6,7 +6,7 @@ use rog_dbus::asus_armoury::AsusArmouryProxy;
 use rog_dbus::zbus_backlight::BacklightProxy;
 use rog_dbus::zbus_platform::{PlatformProxy, PlatformProxyBlocking};
 use rog_platform::asus_armoury::FirmwareAttribute;
-use rog_platform::platform::Properties;
+use rog_platform::platform::{PlatformProfile, Properties};
 use slint::{ComponentHandle, Model, ModelRc, SharedString, VecModel};
 
 use super::show_toast;
@@ -452,7 +452,13 @@ pub fn setup_system_page_callbacks(ui: &MainWindow, _states: Arc<Mutex<Config>>)
             debug!("Available platform profile choices: {:?}", value);
             handle
                 .upgrade_in_event_loop(move |handle| {
-                    value.sort();
+                    // Present profiles from least to most power hungry
+                    value.sort_by_key(|p| match p {
+                        PlatformProfile::Quiet | PlatformProfile::LowPower => 0,
+                        PlatformProfile::Balanced => 1,
+                        PlatformProfile::Performance => 2,
+                        PlatformProfile::Custom => 3,
+                    });
                     let translate: Vec<SharedString> = handle
                         .global::<SystemPageData>()
                         .get_platform_profile_choices()

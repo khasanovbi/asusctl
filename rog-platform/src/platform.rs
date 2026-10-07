@@ -81,7 +81,7 @@ impl RogPlatform {
             && !choices.contains(&PlatformProfile::LowPower)
             && self.split_low_power_handlers().is_some()
         {
-            choices.push(PlatformProfile::Quiet);
+            choices.insert(0, PlatformProfile::Quiet);
         }
         Ok(choices)
     }
