@@ -176,7 +176,14 @@ pub fn init_tray(
 
         // TODO: return an error to the UI
 
-        let tray = match tray_init.disable_dbus_name(true).spawn().await {
+        // At login the app may start before the desktop has a StatusNotifierWatcher;
+        // let ksni register once it appears instead of giving up.
+        let tray = match tray_init
+            .disable_dbus_name(true)
+            .assume_sni_available(true)
+            .spawn()
+            .await
+        {
             Ok(t) => t,
             Err(e) => {
                 log::error!(
